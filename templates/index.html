@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SoundCloud Playlist Downloader</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #121826;
+        color: #edf2ff;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 24px 60px;
+      }
+      .card {
+        background: #1b2333;
+        border: 1px solid #2a3550;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+      form {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      input {
+        flex: 1;
+        min-width: 260px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid #4d5f8a;
+        background: #0f172a;
+        color: #f8fbff;
+      }
+      button {
+        background: linear-gradient(135deg, #ff7b54, #ff4d8d);
+        border: none;
+        color: white;
+        padding: 14px 20px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      .playlist {
+        margin-top: 28px;
+      }
+      .playlist-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        gap: 12px;
+      }
+      .playlist-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .toggle-playlist {
+        background: #1f2937;
+        border: 1px solid #475569;
+        color: #e2e8f0;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .playlist.collapsed .playlist-body {
+        display: none;
+      }
+      .track-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+      .track {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        background: #0f172a;
+        border: 1px solid #2d3d5a;
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .track strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .badge {
+        display: inline-block;
+        background: #1d4ed8;
+        color: #dfe9ff;
+        border-radius: 999px;
+        font-size: 12px;
+        padding: 4px 10px;
+        margin-top: 6px;
+      }
+      .badge.free {
+        background: #0f766e;
+      }
+      .download-link {
+        color: #ffffff;
+        text-decoration: none;
+        background: #10b981;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+      }
+      .download-all {
+        color: #ffffff;
+        text-decoration: none;
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+      }
+      .progress {
+        height: 12px;
+        background: #0f172a;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 12px;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(135deg, #34d399, #22c55e);
+        transition: width 0.3s ease;
+      }
+      .messages {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 18px;
+      }
+      .message {
+        background: #7f1d1d;
+        color: #fee2e2;
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+      .search-toolbar {
+        margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .search-toolbar label {
+        font-weight: 700;
+      }
+      .search-toolbar input {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .search-status {
+        color: #c7d2fe;
+        min-height: 20px;
+      }
+      .hidden-by-search {
+        display: none !important;
+      }
+      @media (max-width: 700px) {
+        .track {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>SoundCloud Playlist Downloader</h1>
+        <p>Ajoutez une playlist SoundCloud, puis téléchargez chaque titre. Si un morceau propose un free download, il est téléchargé via ce lien ; sinon le site utilise le flux MP3 direct de SoundCloud.</p>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="messages">
+              {% for message in messages %}
+                <li class="message">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <form method="post">
+          <input type="url" name="playlist_url" placeholder="https://soundcloud.com/.../sets/..." required>
+          <input type="text" name="output_dir" placeholder="Dossier de sortie (optionnel, ex: mes-musics)">
+          <select name="audio_format" aria-label="Format de sortie">
+            <option value="flac" selected>FLAC (par défaut pour le DJ)</option>
+            <option value="mp3">MP3</option>
+            <option value="wav">WAV</option>
+          </select>
+          <button type="submit">Ajouter la playlist</button>
+        </form>
+      </div>
+
+      <div class="search-toolbar card">
+        <label for="global-search">Recherche globale</label>
+        <input id="global-search" type="search" data-global-search placeholder="Rechercher dans les playlists et morceaux..." autocomplete="off">
+        <small id="search-status" class="search-status">0 résultat</small>
+      </div>
+
+      {% for playlist in playlists %}
+        <section class="playlist card" data-playlist-section>
+          <div class="playlist-header">
+            <div class="playlist-header-left">
+              <button class="toggle-playlist" type="button" data-toggle-playlist aria-expanded="true">Réduire</button>
+              <h2>{{ playlist.name }}</h2>
+            </div>
+            <div>
+              <a href="{{ playlist.url }}" target="_blank" rel="noreferrer">Ouvrir sur SoundCloud</a>
+              <button class="download-all" data-playlist-index="{{ playlist.playlist_index }}">Télécharger toute la playlist</button>
+            </div>
+          </div>
+
+          <div class="playlist-body">
+            <div class="progress-wrap" data-progress-id="{{ playlist.playlist_index }}">
+              <div class="progress"><div class="progress-bar" id="progress-bar-{{ playlist.playlist_index }}"></div></div>
+              <small id="progress-text-{{ playlist.playlist_index }}">0 / {{ playlist.tracks|length }} fichiers</small>
+            </div>
+
+            <ul class="track-list">
+              {% for track in playlist.tracks %}
+                <li class="track">
+                  <div>
+                    <strong>{{ track.title }}</strong>
+                    <span>{{ track.artist }}</span>
+                    <span class="badge {% if track.source == 'free-download' %}free{% endif %}">
+                      {{ (playlist.audio_format or 'flac')|upper if track.source == 'free-download' else (playlist.audio_format or 'flac')|upper }}
+                    </span>
+                  </div>
+                  <a class="download-link" href="{{ url_for('download_track', playlist_index=playlist.playlist_index, track_index=loop.index0) }}">Télécharger</a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+
+    <script>
+      const searchInput = document.querySelector('[data-global-search]');
+      const searchStatus = document.getElementById('search-status');
+      const playlistSections = Array.from(document.querySelectorAll('.playlist'));
+
+      function normalizeSearchValue(value) {
+        return (value || '').trim().toLowerCase();
+      }
+
+      function updateSearchResults() {
+        const value = normalizeSearchValue(searchInput ? searchInput.value : '');
+        let visiblePlaylists = 0;
+
+        playlistSections.forEach(function(section) {
+          const playlistTitle = (section.querySelector('h2')?.textContent || '').toLowerCase();
+          const trackItems = Array.from(section.querySelectorAll('.track'));
+
+          let visibleTracks = 0;
+          trackItems.forEach(function(trackItem) {
+            const text = (trackItem.textContent || '').toLowerCase();
+            const isVisible = !value || text.includes(value);
+            trackItem.classList.toggle('hidden-by-search', !isVisible);
+            if (isVisible) {
+              visibleTracks += 1;
+            }
+          });
+
+          const isPlaylistVisible = !value || playlistTitle.includes(value) || visibleTracks > 0;
+          section.classList.toggle('hidden-by-search', !isPlaylistVisible);
+          if (isPlaylistVisible) {
+            visiblePlaylists += 1;
+          }
+        });
+
+        if (searchStatus) {
+          if (!value) {
+            searchStatus.textContent = '0 résultat';
+            return;
+          }
+          const totalMatches = playlistSections.filter(function(section) {
+            return !section.classList.contains('hidden-by-search');
+          }).length;
+          searchStatus.textContent = totalMatches + ' playlist' + (totalMatches > 1 ? 's' : '') + ' correspondante' + (totalMatches > 1 ? 's' : '');
+        }
+      }
+
+      if (searchInput) {
+        searchInput.addEventListener('input', updateSearchResults);
+      }
+
+      document.querySelectorAll('[data-toggle-playlist]').forEach(function(button) {
+        button.addEventListener('click', function() {
+          const section = button.closest('.playlist');
+          if (!section) {
+            return;
+          }
+
+          const isCollapsed = section.classList.toggle('collapsed');
+          button.textContent = isCollapsed ? 'Développer' : 'Réduire';
+          button.setAttribute('aria-expanded', String(!isCollapsed));
+        });
+      });
+
+      document.querySelectorAll('.download-all').forEach(function(button) {
+        button.addEventListener('click', function() {
+          const playlistIndex = button.getAttribute('data-playlist-index');
+          const progressBar = document.getElementById('progress-bar-' + playlistIndex);
+          const progressText = document.getElementById('progress-text-' + playlistIndex);
+
+          fetch('/download-all/' + playlistIndex, { method: 'POST' })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+              if (!data.ok) {
+                progressText.textContent = data.message || 'Erreur';
+                return;
+              }
+
+              const poll = function() {
+                fetch('/progress/' + playlistIndex)
+                  .then(function(response) { return response.json(); })
+                  .then(function(progressData) {
+                    const total = progressData.total || 1;
+                    const done = progressData.done || 0;
+                    const percent = Math.min(100, Math.round((done / total) * 100));
+                    progressBar.style.width = percent + '%';
+                    progressText.textContent = done + ' / ' + total + ' fichiers';
+
+                    if (progressData.status === 'done' || progressData.status === 'error') {
+                      return;
+                    }
+                    setTimeout(poll, 700);
+                  });
+              };
+              poll();
+            });
+        });
+      });
+    </script>
+  </body>
+</html>

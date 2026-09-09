@@ -1,0 +1,6 @@
+Flask
+requests
+soundcloud
+scdl
+certifi
+yt-dlp
